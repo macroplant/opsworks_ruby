@@ -10,7 +10,7 @@
     with pidfile <%= pid_file.to_s %>
     start program = "/bin/su - <%= node['deployer']['user'] %> -c 'cd <%= File.join(@deploy_to, 'current') %> && <%= @environment.map { |k, v| "#{k}=\"#{v}\"" }.join(' ') %> bundle exec sidekiq -C <%= conf_file.to_s %> -i <%= n %> -P <%= pid_file.to_s %><%= to_require.to_s %> <%= syslog.to_s %>'" with timeout 90 seconds
     stop program = "/bin/su - <%= node['deployer']['user'] %> -c 'cd <%= File.join(@deploy_to, 'current') %> && <%= @environment.map { |k, v| "#{k}=\"#{v}\"" }.join(' ') %> bundle exec sidekiqctl stop <%= pid_file %> <%= timeout %>'" with timeout <%= timeout + 10 %> seconds
-    if totalmem is greater than 1400 MB for 2 cycles then restart # eating up memory?
+    if totalmem is greater than 2000 MB for 2 cycles then restart # eating up memory?
     group sidekiq_<%= @application.to_s %>_group
 
 <% end %>
