@@ -3,8 +3,12 @@ sudo: required
 services:
   - docker
 
+# Use caching feature
+cache: bundler
+
 rvm:
-  - 'ruby-2.4.0'
+  - 2.0.0  # default AWS version
+  - 2.4.2  # last AWS version
 
 addons:
   apt:
