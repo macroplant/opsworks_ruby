@@ -74,7 +74,7 @@ before_fork do
     config.ram           = 3000 # mb
     config.frequency     = 10    # seconds
     config.percent_usage = 0.80
-    config.rolling_restart_frequency = 12 * 3600 # 12 hours in seconds
+    config.rolling_restart_frequency = false # 12 * 3600 # 12 hours in seconds
     config.pre_term = -> (worker) { puts "Worker #{worker.inspect} being killed" }
   end
   PumaWorkerKiller.start
