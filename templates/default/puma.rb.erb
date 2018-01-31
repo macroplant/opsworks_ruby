@@ -84,6 +84,12 @@ before_fork do
   PumaWorkerKiller.start
 end
 
+after_fork do
+  if defined?(ActiveRecord::Base)
+    ActiveRecord::Base.establish_connection
+  end
+end
+
 on_worker_boot do
   ActiveSupport.on_load(:active_record) do
     ActiveRecord::Base.establish_connection
