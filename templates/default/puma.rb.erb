@@ -69,10 +69,6 @@ workers <%= @out[:worker_processes] %>
 worker_timeout <%= @out[:timeout] %>
 
 before_fork do
-  if defined?(ActiveRecord::Base)
-    ActiveRecord::Base.connection.disconnect!
-  end
-
   require 'puma_worker_killer'
   PumaWorkerKiller.config do |config|
     config.ram           = 3000 # mb
