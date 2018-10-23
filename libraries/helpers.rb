@@ -1,16 +1,12 @@
 # frozen_string_literal: true
 
 def applications
-  if Chef::Config[:solo]
-    Chef::Log.warn('This recipe uses search. Chef Solo does not support search.')
-  end
+  Chef::Log.warn('This recipe uses search. Chef Solo does not support search.') if Chef::Config[:solo]
   search(:aws_opsworks_app)
 end
 
 def rdses
-  if Chef::Config[:solo]
-    Chef::Log.warn('This recipe uses search. Chef Solo does not support search.')
-  end
+  Chef::Log.warn('This recipe uses search. Chef Solo does not support search.') if Chef::Config[:solo]
   search(:aws_opsworks_rds_db_instance)
 end
 
@@ -20,6 +16,7 @@ def globals(index, application)
 
   old_item = old_globals(index, application)
   return old_item unless old_item.nil?
+
   evaluate_attribute(index, application, :default_global)
 end
 
@@ -38,6 +35,7 @@ end
 
 def old_globals(index, application)
   return unless node['deploy'][application][index.to_s]
+
   message =
     "DEPRECATION WARNING: node['deploy']['#{application}']['#{index}'] is deprecated and will be removed. " \
     "Please use node['deploy']['#{application}']['global']['#{index}'] instead."
@@ -84,6 +82,7 @@ def every_enabled_application
   node['deploy'].keys.each do |deploy_app_shortname|
     application = applications.detect { |app| app['shortname'] == deploy_app_shortname }
     next unless application && application['deploy']
+
     yield application
   end
 end
@@ -116,6 +115,7 @@ end
 
 def apps_not_included
   return [] if node['applications'].blank?
+
   node['deploy'].keys.reject { |app_name| node['applications'].include?(app_name) }
 end
 

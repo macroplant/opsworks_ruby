@@ -34,12 +34,17 @@ convention).
      of an application, not included in this list - it will be skipped, as this list
      takes precedence over anything else.
 
--  ``node['ruby-ng']['ruby_version']``
+-  ``node['ruby-version']``
 
   -  **Type:** string
-  -  **Default:** ``2.4``
-  -  Sets the Ruby version used through the system. See `ruby-ng cookbook documentation`_
-     for more details
+  -  **Default:** ``2.5``
+  -  Sets the Ruby version used through the system. For debian-based distributions,
+     a ``ruby-ng`` cookbook is used (check `ruby-ng cookbook documentation`_).
+     For Amazon Linux, packages provided by distribution (i.e. ``ruby23``,
+     ``ruby23-devel`` etc.).
+     **Important** please note, that some versions may be available on one system,
+     and not on the other (for example ``ruby-ng`` gets freshest versions of ruby
+     way earlier than Amazon Linux).
 
 Cross-application attributes
 ----------------------------
@@ -163,7 +168,8 @@ database
 
 -  ``app['database']['adapter']``
 
-  -  **Supported values:** ``mariadb``, ``mysql``, ``postgresql``, ``sqlite3``, ``null``
+  -  **Supported values:** ``aurora``, ``aurora-postgresql``, ``mariadb``, ``mysql``, ``postgis``, ``postgresql``,
+     ``sqlite3``, ``null``
   -  **Default:** ``sqlite3``
   -  ActiveRecord adapter which will be used for database connection. ``null`` means
      that no database will be configured, and is currently only tested with the ``rails``
@@ -190,48 +196,49 @@ database
   -  Any other key-value pair provided here, will be passed directly to
      the ``database.yml``
 
-scm
-~~~
+source
+~~~~~~
 
 | Those parameters can also be determined from OpsWorks application, and
-  usually
-| you don’t need to provide them here. Currently only ``git`` is
-  supported.
+  usually you don’t need to provide them here.
 
--  ``app['scm']['scm_provider']``
+-  ``app['source']['adapter']``
 
-  -  **Supported values:** ``git``
+  -  **Supported values:** ``git``, ``http``, ``s3``
   -  **Default:** ``git``
-  -  SCM used by the cookbook to clone the repo.
+  -  Source used by the cookbook to fetch the application codebase.
 
--  ``app['scm']['remove_scm_files']``
+-  ``app['source']['url']``
+
+  -  Source code URL (repository URL for SCMs).
+
+git
+^^^
+
+-  ``app['source']['remove_scm_files']``
 
   -  **Supported values:** ``true``, ``false``
   -  **Default:** ``true``
   -  If set to true, all SCM leftovers (like ``.git``) will be removed.
 
--  ``app['scm']['repository']``
-
-  -  Repository URL
-
--  ``app['scm']['revision']``
+-  ``app['source']['revision']``
 
   -  Branch name/SHA1 of commit which should be use as a base of the
      deployment.
 
--  ``app['scm']['ssh_key']``
+-  ``app['source']['ssh_key']``
 
   -  A private SSH deploy key (the key itself, not the file name), used
      when fetching repositories via SSH.
 
--  ``app['scm']['ssh_wrapper']``
+-  ``app['source']['ssh_wrapper']``
 
   -  A wrapper script, which will be used by git when fetching repository
      via SSH. Essentially, a value of ``GIT_SSH`` environment variable.
      This cookbook provides one of those scripts for you, so you shouldn’t
      alter this variable unless you know what you’re doing.
 
--  ``app['scm']['generated_ssh_wrapper']``
+-  ``app['source']['generated_ssh_wrapper']``
 
   -  **Default:** ``/tmp/ssh-git-wrapper.sh``
   -  If the cookbook generates an SSH wrapper for you, this is where it
@@ -240,10 +247,40 @@ scm
      attribute allows you to override that location to a partition where
      execution of the generated shell script is allowed.
 
--  ``app['scm']['enabled_submodules']``
+-  ``app['source']['enable_submodules']``
 
   -  If set to ``true``, any submodules included in the repository, will
      also be fetched.
+
+s3
+^^
+
+| This source expects a packed project in one of the following formats:
+| ``bzip2``, ``compress``, ``gzip``, ``tar``, ``xz`` or ``zip``.
+| If you are using ubuntu, ``7zip`` is also supported.
+
+-  ``app['source']['user']``
+
+  -  ``AWS_ACCESS_KEY_ID`` with read access to the bucket.
+
+-  ``app['source']['password']``
+
+  -  ``AWS_SECRET_ACCESS_KEY`` for given ``AWS_ACCESS_KEY_ID``.
+
+http
+^^^^
+
+| This source expects a packed project in one of the following formats:
+| ``bzip2``, ``compress``, ``gzip``, ``tar``, ``xz`` or ``zip``.
+| If you are using ubuntu, ``7zip`` is also supported.
+
+-  ``app['source']['user']``
+
+  -  If file is hidden behind HTTP BASIC AUTH, this field should contain username.
+
+-  ``app['source']['password']``
+
+  -  If file is hidden behind HTTP BASIC AUTH, this field should contain password.
 
 framework
 ~~~~~~~~~
@@ -380,6 +417,28 @@ appserver
      version provided by the Passenger APT PPA. Set this to a non-nil
      value to lock your Passenger installation at a specific version.
 
+- ``app['appserver']['after_deploy']``
+
+  - **Default:** ``stop-start``
+  - **Supported values:** ``stop-start``, ``restart``, ``clean-restart``
+  - Tell the appserver how to restart following a deployment.  A ``stop-start``
+    will instruct the appserver to stop and then start immediately.  This is
+    can cause requests from the webserver to be dropped since it closes the socket.
+    A ``restart`` sends a signal to the appserver instructing it to restart while
+    maintaining the open socket.  Requests will hang while the app boots, but
+    will not be lost. A ``clean-restart`` will perform a ``stop-start`` if the
+    Gemfile has changed or a ``restart`` otherwise.  The behavior of each of
+    these approaches varies between appservers.  See their documentation for more
+    details.
+
+- ``app['appserver']['port']``
+
+  - **Default:** None
+  - Bind the appserver to a port on 0.0.0.0.  This is
+    useful for serving the application directly from the appserver without a web
+    server middleware or separating the web server into its own container or server.
+
+
 unicorn
 ^^^^^^^
 
@@ -421,6 +480,30 @@ puma
 
   -  **Default:** ``0``
 
+-  |app['appserver']['on_restart']|_
+
+  - Code to run before doing a restart. This code should close log files, database connections, etc.
+
+-  |app['appserver']['before_fork']|_
+
+  - Code to run immediately before the master starts workers.
+
+-  |app['appserver']['on_worker_boot']|_
+
+  - Code to run in a worker before it starts serving requests. This is called everytime a worker is to be started.
+
+-  |app['appserver']['on_worker_shutdown']|_
+
+  - Code to run in a worker right before it exits. This is called everytime a worker is to about to shutdown.
+
+-  |app['appserver']['on_worker_fork']|_
+
+  - Code to run in the master right before a worker is started. The worker's index is passed as an argument. This is called everytime a worker is to be started.
+
+-  |app['appserver']['after_worker_fork']|_
+
+  - Code to run in the master after a worker has been started. The worker's index is passed as an argument. This is called everytime a worker is to be started.
+
 thin
 ^^^^
 
@@ -441,7 +524,7 @@ thin
   -  **Default:** ``4``
 
 passenger
-^^^^
+^^^^^^^^^
 
 -  ``app['appserver']['max_pool_size']``
 
@@ -509,6 +592,14 @@ webserver
   -  The port on which the webserver should listen for HTTPs requests, if
      SSL requests are enabled. Note that SSL itself is controlled by the
      ``app['enable_ssl']`` setting in Opsworks.
+
+-  ``app['webserver']['force_ssl']``
+
+  -  **Supported values:** ``true``, ``false``
+  -  **Default** ``false``
+  -  When this parameter is set to ``true`` all requests passed to http will
+     be redirected to https, with 301 status code. This works only when SSL
+     in OpsWorks panel is enabled, otherwise it's ommited.
 
 -  ``app['webserver']['site_config_template']``
 
@@ -591,7 +682,7 @@ nginx
 
   -  **Supported values:** ``default`` or ``source``
   -  **Default:** ``default``
-  -  The way the `chef_nginx`_ cookbook handles ``nginx`` installation.
+  -  The way the `nginx`_ cookbook handles ``nginx`` installation.
      Check out `the corresponding docs`_ for more details. Never use
      ``node['nginx']['install_method']``, as it will be always overwritten
      by this attribute.
@@ -636,13 +727,13 @@ nginx
 
   -  **Default**: ``10``
 
--  |app['webserver']['enable_upgrade_method']|_
+-  ``app['webserver']['enable_upgrade_method']``
 
   -  **Supported values:** ``true``, ``false``
   -  **Default**: ``false``
   -  When set to true, enable Websocket's upgrade method such as Rails actionCable.
 
-| Since this driver is basically a wrapper for `chef_nginx cookbook`_,
+| Since this driver is basically a wrapper for `nginx cookbook`_,
 | you can also configure `node['nginx'] attributes`_
 | as well (notice that ``node['deploy'][<application_shortname>]`` logic
 | doesn't apply here.)
@@ -698,6 +789,18 @@ resque
 .. _app['appserver']['thread_max']: https://github.com/puma/puma/blob/c169853ff233dd3b5c4e8ed17e84e1a6d8cb565c/examples/config.rb#L62
 .. |app['appserver']['thread_min']| replace:: ``app['appserver']['thread_min']``
 .. _app['appserver']['thread_min']: https://github.com/puma/puma/blob/c169853ff233dd3b5c4e8ed17e84e1a6d8cb565c/examples/config.rb#L62
+.. |app['appserver']['on_restart']| replace:: ``app['appserver']['on_restart']``
+.. _app['appserver']['on_restart']: https://github.com/puma/puma/blob/e4255d03fb57021c96f7d03a3784b21b6e85b35b/examples/config.rb#L90
+.. |app['appserver']['before_fork']| replace:: ``app['appserver']['before_fork']``
+.. _app['appserver']['before_fork']: https://github.com/puma/puma/blob/e4255d03fb57021c96f7d03a3784b21b6e85b35b/examples/config.rb#L116
+.. |app['appserver']['on_worker_boot']| replace:: ``app['appserver']['on_worker_boot']``
+.. _app['appserver']['on_worker_boot']: https://github.com/puma/puma/blob/e4255d03fb57021c96f7d03a3784b21b6e85b35b/examples/config.rb#L124
+.. |app['appserver']['on_worker_shutdown']| replace:: ``app['appserver']['on_worker_shutdown']``
+.. _app['appserver']['on_worker_shutdown']: https://github.com/puma/puma/blob/e4255d03fb57021c96f7d03a3784b21b6e85b35b/examples/config.rb#L132
+.. |app['appserver']['on_worker_fork']| replace:: ``app['appserver']['on_worker_fork']``
+.. _app['appserver']['on_worker_fork']: https://github.com/puma/puma/blob/e4255d03fb57021c96f7d03a3784b21b6e85b35b/examples/config.rb#L141
+.. |app['appserver']['after_worker_fork']| replace:: ``app['appserver']['after_worker_fork']``
+.. _app['appserver']['after_worker_fork']: https://github.com/puma/puma/blob/e4255d03fb57021c96f7d03a3784b21b6e85b35b/examples/config.rb#L150
 .. _Read more here.: https://weakdh.org/sysadmin.html
 .. _covered in this article: https://cipherli.st/
 .. |app['webserver']['limit_request_body']| replace:: ``app['webserver']['limit_request_body']``
@@ -706,8 +809,8 @@ resque
 .. _app['webserver']['log_level']: https://httpd.apache.org/docs/2.4/mod/core.html#loglevel
 .. |app['webserver']['proxy_timeout']| replace:: ``app['webserver']['proxy_timeout']``
 .. _app['webserver']['proxy_timeout']: https://httpd.apache.org/docs/current/mod/mod_proxy.html#proxytimeout
-.. _chef_nginx: https://supermarket.chef.io/cookbooks/chef_nginx
-.. _the corresponding docs: https://github.com/miketheman/nginx/tree/2.7.x#recipes
+.. _nginx: https://supermarket.chef.io/cookbooks/nginx
+.. _the corresponding docs: https://github.com/chef-cookbooks/nginx#attributes
 .. |app['webserver']['client_body_timeout']| replace:: ``app['webserver']['client_body_timeout']``
 .. _app['webserver']['client_body_timeout']: http://nginx.org/en/docs/http/ngx_http_core_module.html#client_body_timeout
 .. |app['webserver']['client_header_timeout']| replace:: ``app['webserver']['client_header_timeout']``
@@ -720,7 +823,7 @@ resque
 .. _app['webserver']['proxy_send_timeout']: http://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_send_timeout
 .. |app['webserver']['send_timeout']| replace:: ``app['webserver']['send_timeout']``
 .. _app['webserver']['send_timeout']: http://nginx.org/en/docs/http/ngx_http_core_module.html#send_timeout
-.. _chef_nginx cookbook: https://github.com/chef-cookbooks/chef_nginx
+.. _nginx cookbook: https://github.com/chef-cookbooks/nginx
 .. |node['nginx'] attributes| replace:: ``node['nginx']`` attributes
 .. _node['nginx'] attributes: https://github.com/miketheman/nginx/tree/2.7.x#attributes
 .. |sidekiq.yml config file| replace:: ``sidekiq.yml`` config file
