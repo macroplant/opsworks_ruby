@@ -3,7 +3,7 @@
 require 'spec_helper'
 
 describe 'opsworks_ruby::setup' do
-  describe package('ruby2.4') do
+  describe package('ruby2.5') do
     it { should be_installed }
   end
 
@@ -62,7 +62,6 @@ describe 'opsworks_ruby::configure' do
       its(:content) { should include 'ENV[\'HOME\'] = "/home/deploy"' }
       its(:content) { should include 'ENV[\'USER\'] = "deploy"' }
       its(:content) { should include 'PID_PATH="/run/lock/dummy_project/thin.pid"' }
-      its(:content) { should include 'def thin_running?' }
     end
   end
 
@@ -88,9 +87,9 @@ describe 'opsworks_ruby::configure' do
 end
 
 describe 'opsworks_ruby::deploy' do
-  context 'scm' do
+  context 'source' do
     describe file('/tmp/ssh-git-wrapper.sh') do
-      its(:content) { should include 'exec ssh -o UserKnownHostsFile=/dev/null' }
+      it { should_not exist }
     end
 
     describe file('/srv/www/dummy_project/current/.git') do

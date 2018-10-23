@@ -4,7 +4,9 @@ services:
   - docker
 
 # Use caching feature
-cache: bundler
+cache:
+  directories:
+    - vendor/bundle
 
 rvm:
   - 2.0.0  # default AWS version
@@ -22,8 +24,8 @@ env:
   matrix:
     - INSTANCE=default-ubuntu-1604
     - INSTANCE=all-options-ubuntu-1604
-    - INSTANCE=unicorn-apache-hanami-resque-ubuntu-1604
-    - INSTANCE=thin-nginx-padrino-delayed-job-ubuntu-1604
+    - INSTANCE=http-unicorn-apache-hanami-resque-ubuntu-1604
+    - INSTANCE=s3-thin-nginx-padrino-delayed-job-ubuntu-1604
     - INSTANCE=nullified-ubuntu-1604
     - INSTANCE=maximum-override-ubuntu-1604
 
