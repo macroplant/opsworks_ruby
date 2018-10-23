@@ -1040,10 +1040,7 @@ describe 'opsworks_ruby::configure' do
       expect(chef_run)
         .to render_file("/srv/www/#{aws_opsworks_app['shortname']}/shared/scripts/thin.service")
         .with_content('thin -C #{ROOT_PATH}/shared/config/thin.yml')
-<<<<<<< HEAD
-=======
       # rubocop:enable Lint/InterpolationCheck
->>>>>>> upstream/master
     end
 
     it 'defines thin service' do
