@@ -138,5 +138,23 @@ end
 # The default is 60
 worker_timeout <%= @out[:timeout] %>
 
+# before_fork do
+#   require 'puma_worker_killer'
+#   PumaWorkerKiller.config do |config|
+#     config.ram           = 3000 # mb
+#     config.frequency     = 10    # seconds
+#     config.percent_usage = 0.80
+#     config.rolling_restart_frequency = false # 12 * 3600 # 12 hours in seconds
+#     config.pre_term = -> (worker) { puts "Worker #{worker.inspect} being killed" }
+#   end
+#   PumaWorkerKiller.start
+# end
+#
+# on_worker_boot do
+#   ActiveSupport.on_load(:active_record) do
+#     ActiveRecord::Base.establish_connection
+#   end
+# end
+
 # Allow puma to be restarted by `rails restart` command.
 plugin :tmp_restart if Gem.loaded_specs['puma'].version >= Gem::Version.new('3.0')
