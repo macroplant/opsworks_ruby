@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/macroplant/ohai.git
-  revision: f800a651962e93fad34298d42ba5e47b25b72121
+  revision: b0c23b6e7a7af129bd43397cedf8196000bc886f
   branch: imds-v2-chef-12
   specs:
     ohai (8.23.0)
