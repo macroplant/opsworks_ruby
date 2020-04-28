@@ -12,7 +12,7 @@ coverage
 .bundle/*
 
 node_modules/
-
+/tmp
 .kitchen/
 .kitchen.local.yml
 .asset-cache
